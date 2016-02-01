@@ -1,0 +1,20 @@
+composefile: docker-compose.yml
+cache:
+  - vendor
+s3:
+  db: s3://my-bucket-name/db.sql.gz
+  settings: s3://my-bucket-name/local.settings.php
+environment:
+  AWS_ACCESS_KEY_ID: $DB_S3_ACCESS_KEY
+  AWS_SECRET_ACCESS_KEY: $DB_S3_SECRET_KEY
+build:
+  - supervisord &
+  - sleep 30
+  - supervisorctl status
+  - drush -y sql-create
+  - drush sqlc < db.sql
+  - drush status
+  - composer install
+  - ./bin/phpunit --log-junit="./ci-test-results/phpunit.xml"
+postbuild:
+  - echo "Build done!"
